@@ -1,0 +1,120 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Table des clients, un enregistrement par client"
+    columns:
+      - name: customer_id
+        description: "Identifiant unique du client, pour une commande donnée"
+        data_tests:
+          - unique
+          - not_null          
+      - name: customer_unique_id
+        description: "identifiant unique stable du client, pour toute commande"
+      - name: zip_code_prefix
+        description: "préfixe du code postal du client, conservé en text pour préserver les zéro au début"
+      - name: customer_city
+        description: "ville du client, nettoyée des accent et normalisé en minuscule"
+      - name: state
+        description: "Etat brésilien du client, conservé en 2 lettres majuscule"
+
+  - name: stg_orders
+    description: "Table des commandes , 1 ligne par commande"
+    columns:
+      - name: order_id
+        description: "Identifiant unique d'une commande"
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Référence vers le client ayant passé la commande."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: status
+        description: " Statut de la commande(livrée, annulée , en cours..)"
+  
+  - name: stg_order_items
+    description: "Table des articles commandés dans chaque commande"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_id
+            - order_item_id
+    columns:
+      - name: order_id
+        description: "Référence vers la commande"
+      - name: order_item_id
+        description: "Numéro de ligne de l'article au sein d'une même commande (1, 2, 3... si plusieurs produits différents sont commandés ensemble). Combiné à order_id, forme la clé unique de la table."
+      - name: product_id
+        description: "Référence vers le produit commandé"
+      - name: seller_id
+        description: "Référence vers le vendeur du produit commandé"
+
+  - name: stg_payments
+    description: "Table des payments"
+    columns:
+      - name: order_id
+        description: "Référence vers la commande payée"    
+      - name: sequential
+        description: "Rang du paiement dans la séquence des paiements d'une même commande (une commande peut être payée en plusieurs fois ou avec plusieurs moyens)."
+      - name: type
+        description: "Moyen de paiement utilisé"
+      - name: installments
+        description: "Nombre de versements, conservé comme nombre"
+      - name: value
+        description: "Veleur du paiement"
+  
+  - name: stg_products
+    description: "Table des produits"
+    columns:
+      - name: product_id
+        description: "Identifiant unique du produit"
+        data_tests:
+          - unique
+          - not_null
+      - name: category_name
+        description: "catégorie du produit, conservé en minuscule"
+      - name: name_length
+        description: "Longueur du nom du produit"
+
+  - name: stg_sellers
+    description: "Table des vendeurs"
+    columns:
+      - name: seller_id
+        description: "Idnetifiant unique du vendeur"
+        data_tests:
+          - unique
+          - not_null
+      - name: zip_code_prefix
+        description: "Préfixe du code postal du vendeur"
+
+  - name: stg_geolocation
+    description: "Table de géolocalisation par préfixe de code postal (plusieurs lignes possibles par code postal, points GPS échantillonnés)."
+    columns:
+      - name: geolocation_zip_code_prefix
+        description: "préfixe du code postal"
+      - name: geolocation_city
+        description: "Nom de la ville, nettoyé des accents et normalisé en minuscule."
+  
+  - name: stg_category_name_translation
+    description: "Table de correspondance entre les catégories de produits en portugais et leur traduction en anglais."
+    columns:
+      - name: category_name
+        description: "nom de la catégroie du produit conservé en minsucule"
+      - name: category_name_english
+        description: "Nom de la catégorie du produit en anglais, conservé en minuscule"
+  
+  - name: stg_reviews
+    description: "Table des avis clients"
+    columns:
+      - name: review_id
+        description: "Identifiant unique de la table des avis"
+      - name: order_id
+        description: "Référence vers le produit évalué"
+      - name: score
+        description: "Score de l'avis, conservé en nombre"
+
+
